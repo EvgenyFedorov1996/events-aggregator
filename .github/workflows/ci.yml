@@ -45,5 +45,12 @@ jobs:
       - name: Run Ruff
         run: uv run ruff check .
 
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql+psycopg2://events_user:events_password@localhost:5435/events
+          EVENTS_PROVIDER_URL: https://events-provider.dev-2.python-labs.ru
+          EVENTS_PROVIDER_API_KEY: test-api-key
+        run: uv run alembic upgrade head
+
       - name: Run tests
         run: uv run pytest
