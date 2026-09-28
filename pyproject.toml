@@ -12,6 +12,9 @@ dependencies = [
     "httpx",
     "pydantic-settings",
     "apscheduler",
+    "greenlet>=3.2.5",
+    "psycopg2>=2.9.12",
+    "email-validator>=2.3.0",
 ]
 
 [dependency-groups]
