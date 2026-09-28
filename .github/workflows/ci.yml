@@ -86,10 +86,11 @@ jobs:
 
       - name: Deploy to LMS
         run: |
-          curl -i -X POST \
+          curl -f -X POST \
             -H "X-API-Key: ${{ secrets.LMS_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
-              "image": "ghcr.io/evgenyfedorov1996/events-aggregator:${{ github.sha }}"
+              "image": "ghcr.io/evgenyfedorov1996/events-aggregator:${{ github.sha }}",
+              "repository": "${{ github.repository }}"
             }' \
             https://lms.python-labs.ru/api/deploy-requests
