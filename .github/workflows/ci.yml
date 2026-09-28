@@ -86,7 +86,7 @@ jobs:
 
       - name: Deploy to LMS
         run: |
-          curl -f -X POST \
+          curl -i -X POST \
             -H "X-API-Key: ${{ secrets.LMS_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
