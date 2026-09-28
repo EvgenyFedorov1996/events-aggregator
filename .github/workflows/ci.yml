@@ -12,6 +12,21 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: events
+          POSTGRES_USER: events_user
+          POSTGRES_PASSWORD: events_password
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd "pg_isready -U events_user -d events"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
