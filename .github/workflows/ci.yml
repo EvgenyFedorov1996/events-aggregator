@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
@@ -54,6 +58,7 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
+
   deploy:
     needs: lint-and-test
     runs-on: ubuntu-latest
