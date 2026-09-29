@@ -25,7 +25,15 @@ class Settings(BaseSettings):
             return self.database_url
 
         if self.postgres_connection_string:
-            return self.postgres_connection_string
+            url = self.postgres_connection_string
+
+            if url.startswith("postgres://"):
+                return "postgresql+asyncpg://" + url[len("postgres://"):]
+
+            if url.startswith("postgresql://"):
+                return "postgresql+asyncpg://" + url[len("postgresql://"):]
+
+            return url
 
         if all(
             [
