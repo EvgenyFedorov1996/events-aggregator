@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from datetime import date
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,9 +22,12 @@ from app.schemas.tickets import (
     TicketCreateResponse,
     TicketDeleteResponse,
 )
-from app.services.sync import sync_events
 from app.services.tickets import create_ticket, delete_ticket
-from app.workers.scheduler import start_scheduler, stop_scheduler
+from app.workers.scheduler import (
+    run_sync_job,
+    start_scheduler,
+    stop_scheduler,
+)
 
 
 @asynccontextmanager
@@ -270,18 +273,10 @@ async def delete_ticket_endpoint(
         await client.close()
 
 
-@app.post("/api/sync/trigger")
+@app.post("/api/sync/trigger", status_code=202)
 async def trigger_sync(
-    session: AsyncSession = Depends(get_session),
+    background_tasks: BackgroundTasks,
 ):
-    client = EventsProviderClient()
+    background_tasks.add_task(run_sync_job)
 
-    try:
-        await sync_events(
-            session=session,
-            client=client,
-        )
-
-        return {"status": "ok"}
-    finally:
-        await client.close()
+    return {"status": "accepted"}
