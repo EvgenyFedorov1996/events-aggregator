@@ -202,7 +202,8 @@ async def get_available_seats(
 
     if cached_seats is not None:
         return AvailableSeatsResponse(
-            seats=cached_seats,
+            event_id=event_id,
+            available_seats=cached_seats,
         )
 
     client = EventsProviderClient()
@@ -216,7 +217,8 @@ async def get_available_seats(
     seats_cache.set(cache_key, seats)
 
     return AvailableSeatsResponse(
-        seats=seats,
+        event_id=event_id,
+        available_seats=seats,
     )
 
 

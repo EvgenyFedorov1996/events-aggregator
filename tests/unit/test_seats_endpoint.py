@@ -41,7 +41,10 @@ async def test_get_available_seats_uses_cache():
             session=session,
         )
 
-    assert first_response.seats == ["A1", "A2", "B1"]
-    assert second_response.seats == ["A1", "A2", "B1"]
+    assert first_response.event_id == event_id
+    assert first_response.available_seats == ["A1", "A2", "B1"]
+
+    assert second_response.event_id == event_id
+    assert second_response.available_seats == ["A1", "A2", "B1"]
 
     mock_client.get_available_seats.assert_awaited_once()

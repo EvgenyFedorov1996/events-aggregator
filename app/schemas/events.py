@@ -39,4 +39,5 @@ class EventDetailResponse(BaseModel):
 
 
 class AvailableSeatsResponse(BaseModel):
-    seats: list[str]
+    event_id: UUID
+    available_seats: list[str]
