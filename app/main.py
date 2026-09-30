@@ -3,6 +3,8 @@ from datetime import date
 from uuid import UUID
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,6 +46,18 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request,
+    exc: RequestValidationError,
+):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": exc.errors()},
+    )
+
 
 seats_cache = SeatsCache(ttl=30)
 
