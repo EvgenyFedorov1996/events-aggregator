@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException
@@ -27,7 +28,7 @@ async def create_ticket(
             detail="Event not found",
         )
 
-    if event.status != "registration_open":
+    if datetime.now(timezone.utc) >= event.registration_deadline:
         raise HTTPException(
             status_code=400,
             detail="Registration is closed",

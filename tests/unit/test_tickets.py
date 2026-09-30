@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -16,7 +17,9 @@ async def test_create_ticket_success():
         (),
         {
             "id": event_id,
-            "status": "registration_open",
+            "status": "published",
+            "registration_deadline": datetime.now(timezone.utc)
+            + timedelta(hours=1),
         },
     )()
 
@@ -88,7 +91,9 @@ async def test_create_ticket_registration_closed():
         (),
         {
             "id": event_id,
-            "status": "registration_closed",
+            "status": "published",
+            "registration_deadline": datetime.now(timezone.utc)
+            - timedelta(hours=1),
         },
     )()
 
@@ -124,7 +129,9 @@ async def test_create_ticket_seat_not_available():
         (),
         {
             "id": event_id,
-            "status": "registration_open",
+            "status": "published",
+            "registration_deadline": datetime.now(timezone.utc)
+            + timedelta(hours=1),
         },
     )()
 
