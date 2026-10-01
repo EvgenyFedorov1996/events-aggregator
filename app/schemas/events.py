@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.models.enums import EventStatus
+
 
 class EventListItem(BaseModel):
     id: UUID
@@ -10,7 +12,7 @@ class EventListItem(BaseModel):
     place: str
     event_time: datetime
     registration_deadline: datetime
-    status: str
+    status: EventStatus
     number_of_visitors: int
 
 
@@ -34,7 +36,7 @@ class EventDetailResponse(BaseModel):
     place: PlaceDetail
     event_time: datetime
     registration_deadline: datetime
-    status: str
+    status: EventStatus
     number_of_visitors: int
 
 

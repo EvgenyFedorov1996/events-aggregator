@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients.events_provider import EventsProviderClient
 from app.models import Event, Place, SyncState
+from app.models.enums import EventStatus, SyncStatus
 from app.services.paginator import EventsPaginator
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ async def _get_or_create_sync_state(
     if sync_state is None:
         sync_state = SyncState(
             id=1,
-            sync_status="never",
+            sync_status=SyncStatus.NEVER,
         )
         session.add(sync_state)
         await session.flush()
@@ -88,6 +89,8 @@ async def sync_events(
                     event_data["changed_at"],
                 )
 
+                event_status = EventStatus(event_data["status"])
+
                 if event is None:
                     event = Event(
                         id=event_id,
@@ -99,7 +102,7 @@ async def sync_events(
                         registration_deadline=datetime.fromisoformat(
                             event_data["registration_deadline"],
                         ),
-                        status=event_data["status"],
+                        status=event_status,
                         number_of_visitors=event_data["number_of_visitors"],
                         changed_at=event_changed_at,
                     )
@@ -113,7 +116,7 @@ async def sync_events(
                     event.registration_deadline = datetime.fromisoformat(
                         event_data["registration_deadline"],
                     )
-                    event.status = event_data["status"]
+                    event.status = event_status
                     event.number_of_visitors = event_data["number_of_visitors"]
                     event.changed_at = event_changed_at
 
@@ -122,14 +125,14 @@ async def sync_events(
 
         sync_state.last_changed_at = latest_changed_at
         sync_state.last_sync_time = datetime.now(timezone.utc)
-        sync_state.sync_status = "success"
+        sync_state.sync_status = SyncStatus.SUCCESS
 
         await session.commit()
 
     except Exception:
         await session.rollback()
 
-        sync_state.sync_status = "failed"
+        sync_state.sync_status = SyncStatus.FAILED
         await session.commit()
 
         logger.exception("Events synchronization failed")

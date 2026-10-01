@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+from app.models.enums import EventStatus
 
 if TYPE_CHECKING:
     from app.models.place import Place
@@ -32,7 +33,10 @@ class Event(Base):
         DateTime(timezone=True),
         nullable=False,
     )
-    status: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[EventStatus] = mapped_column(
+        String(50),
+        nullable=False,
+    )
     number_of_visitors: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
