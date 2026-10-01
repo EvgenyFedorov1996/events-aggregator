@@ -22,40 +22,32 @@ Backend-сервис для агрегирования событий из вн�
 ## Возможности
 
 - Синхронизация событий с Events Provider API
-- Хранение событий и мест в PostgreSQL
-- Получение списка событий
+- Пагинация при получении событий от провайдера
+- Хранение событий, мест и билетов в PostgreSQL
+- Получение списка событий с пагинацией
+- Фильтрация событий по дате
 - Получение информации о конкретном событии
 - Получение доступных мест
+- Кэширование доступных мест
 - Регистрация билета
 - Отмена билета
-- Кэширование доступных мест
-- Фоновая периодическая синхронизация
+- Проверка доступности места перед регистрацией
+- Проверка срока окончания регистрации
+- Фоновая периодическая синхронизация событий
+- Ручной запуск синхронизации через API
+- Хранение состояния последней синхронизации
 - Миграции базы данных через Alembic
-- Автоматический запуск lint и tests в GitHub Actions
+- Автоматический запуск Ruff и тестов в GitHub Actions
 
-## Структура проекта
+## API
+
+Основные endpoints:
 
 ```text
-events-aggregator/
-├── app/
-│   ├── api/
-│   ├── cache/
-│   ├── clients/
-│   ├── models/
-│   ├── schemas/
-│   ├── services/
-│   ├── workers/
-│   ├── config.py
-│   ├── database.py
-│   └── main.py
-├── migrations/
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-├── .github/
-│   └── workflows/
-├── docker-compose.yml
-├── Dockerfile
-├── pyproject.toml
-└── README.md
+GET    /api/health
+GET    /api/events
+GET    /api/events/{event_id}
+GET    /api/events/{event_id}/seats
+POST   /api/tickets
+DELETE /api/tickets/{ticket_id}
+POST   /api/sync/trigger
