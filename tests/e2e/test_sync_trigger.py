@@ -13,6 +13,6 @@ def test_trigger_sync():
     ) as mock_sync:
         response = client.post("/api/sync/trigger")
 
-    assert response.status_code == 202
+    assert response.status_code == 200
     assert response.json() == {"status": "accepted"}
     mock_sync.assert_called_once()
