@@ -3,8 +3,13 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException
 
+from app.services.exceptions import (
+    EventNotFound,
+    RegistrationClosed,
+    SeatNotAvailable,
+    TicketNotFound,
+)
 from app.services.tickets import create_ticket, delete_ticket
 
 
@@ -64,7 +69,7 @@ async def test_create_ticket_event_not_found():
 
     client = AsyncMock()
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(EventNotFound):
         await create_ticket(
             session=session,
             client=client,
@@ -74,9 +79,6 @@ async def test_create_ticket_event_not_found():
             email="test@example.com",
             seat="A1",
         )
-
-    assert exc_info.value.status_code == 404
-    assert exc_info.value.detail == "Event not found"
 
     client.get_available_seats.assert_not_awaited()
     client.register.assert_not_awaited()
@@ -102,7 +104,7 @@ async def test_create_ticket_registration_closed():
 
     client = AsyncMock()
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(RegistrationClosed):
         await create_ticket(
             session=session,
             client=client,
@@ -112,9 +114,6 @@ async def test_create_ticket_registration_closed():
             email="test@example.com",
             seat="A1",
         )
-
-    assert exc_info.value.status_code == 400
-    assert exc_info.value.detail == "Registration is closed"
 
     client.get_available_seats.assert_not_awaited()
     client.register.assert_not_awaited()
@@ -143,7 +142,7 @@ async def test_create_ticket_seat_not_available():
         "seats": ["A1", "A2", "B1"],
     }
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(SeatNotAvailable):
         await create_ticket(
             session=session,
             client=client,
@@ -153,9 +152,6 @@ async def test_create_ticket_seat_not_available():
             email="test@example.com",
             seat="C1",
         )
-
-    assert exc_info.value.status_code == 400
-    assert exc_info.value.detail == "Seat is not available"
 
     client.register.assert_not_awaited()
 
@@ -207,14 +203,11 @@ async def test_delete_ticket_not_found():
 
     ticket_id = uuid4()
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(TicketNotFound):
         await delete_ticket(
             session=session,
             client=client,
             ticket_id=ticket_id,
         )
-
-    assert exc_info.value.status_code == 404
-    assert exc_info.value.detail == "Ticket not found"
 
     client.unregister.assert_not_awaited()

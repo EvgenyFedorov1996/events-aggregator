@@ -1,12 +1,17 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients.events_provider import EventsProviderClient
 from app.models import Event, Ticket
+from app.services.exceptions import (
+    EventNotFound,
+    RegistrationClosed,
+    SeatNotAvailable,
+    TicketNotFound,
+)
 
 
 async def create_ticket(
@@ -23,25 +28,16 @@ async def create_ticket(
     )
 
     if event is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Event not found",
-        )
+        raise EventNotFound
 
     if datetime.now(timezone.utc) >= event.registration_deadline:
-        raise HTTPException(
-            status_code=400,
-            detail="Registration is closed",
-        )
+        raise RegistrationClosed
 
     seats_response = await client.get_available_seats(event_id)
     available_seats = seats_response["seats"]
 
     if seat not in available_seats:
-        raise HTTPException(
-            status_code=400,
-            detail="Seat is not available",
-        )
+        raise SeatNotAvailable
 
     provider_response = await client.register(
         event_id=event_id,
@@ -80,10 +76,7 @@ async def delete_ticket(
     )
 
     if ticket is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Ticket not found",
-        )
+        raise TicketNotFound
 
     await client.unregister(
         event_id=ticket.event_id,

@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timezone
-from urllib.parse import parse_qs, urlparse
 from uuid import UUID
 
 from sqlalchemy import select
@@ -8,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients.events_provider import EventsProviderClient
 from app.models import Event, Place, SyncState
+from app.services.paginator import EventsPaginator
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +49,13 @@ async def sync_events(
             )
 
         latest_changed_at = changed_at
-        cursor = None
 
-        while True:
-            response = await client.get_events(
-                changed_at=changed_at,
-                cursor=cursor,
-            )
+        paginator = EventsPaginator(
+            client=client,
+            changed_at=changed_at,
+        )
 
+        async for response in paginator:
             for event_data in response["results"]:
                 place_data = event_data["place"]
 
@@ -120,19 +119,6 @@ async def sync_events(
 
                 if event_changed_at > latest_changed_at:
                     latest_changed_at = event_changed_at
-
-            next_url = response.get("next")
-
-            if not next_url:
-                break
-
-            query = parse_qs(urlparse(next_url).query)
-            cursor_values = query.get("cursor")
-
-            if not cursor_values:
-                break
-
-            cursor = cursor_values[0]
 
         sync_state.last_changed_at = latest_changed_at
         sync_state.last_sync_time = datetime.now(timezone.utc)

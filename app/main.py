@@ -2,16 +2,21 @@ from contextlib import asynccontextmanager
 from datetime import date
 from uuid import UUID
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+)
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cache.seats import SeatsCache
 from app.clients.events_provider import EventsProviderClient
 from app.database import get_session
-from app.models import Event, Place
+from app.repositories.events import EventRepository
 from app.schemas.events import (
     AvailableSeatsResponse,
     EventDetailResponse,
@@ -23,6 +28,12 @@ from app.schemas.tickets import (
     TicketCreateRequest,
     TicketCreateResponse,
     TicketDeleteResponse,
+)
+from app.services.exceptions import (
+    EventNotFound,
+    RegistrationClosed,
+    SeatNotAvailable,
+    TicketNotFound,
 )
 from app.services.tickets import create_ticket, delete_ticket
 from app.workers.scheduler import (
@@ -50,12 +61,56 @@ app = FastAPI(
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
-    request,
+    request: Request,
     exc: RequestValidationError,
 ):
     return JSONResponse(
         status_code=400,
         content={"detail": exc.errors()},
+    )
+
+
+@app.exception_handler(EventNotFound)
+async def event_not_found_handler(
+    request: Request,
+    exc: EventNotFound,
+):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": "Event not found"},
+    )
+
+
+@app.exception_handler(RegistrationClosed)
+async def registration_closed_handler(
+    request: Request,
+    exc: RegistrationClosed,
+):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": "Registration is closed"},
+    )
+
+
+@app.exception_handler(SeatNotAvailable)
+async def seat_not_available_handler(
+    request: Request,
+    exc: SeatNotAvailable,
+):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": "Seat is not available"},
+    )
+
+
+@app.exception_handler(TicketNotFound)
+async def ticket_not_found_handler(
+    request: Request,
+    exc: TicketNotFound,
+):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": "Ticket not found"},
     )
 
 
@@ -77,31 +132,13 @@ async def get_events(
     page_size: int = 20,
     session: AsyncSession = Depends(get_session),
 ):
-    filters = []
+    repository = EventRepository(session)
 
-    if date_from is not None:
-        filters.append(Event.event_time >= date_from)
-
-    count_query = select(func.count()).select_from(Event)
-
-    if filters:
-        count_query = count_query.where(*filters)
-
-    total_count = await session.scalar(count_query)
-
-    query = (
-        select(Event, Place)
-        .join(Place, Event.place_id == Place.id)
-        .order_by(Event.event_time)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+    total_count, rows = await repository.get_events(
+        date_from=date_from,
+        page=page,
+        page_size=page_size,
     )
-
-    if filters:
-        query = query.where(*filters)
-
-    result = await session.execute(query)
-    rows = result.all()
 
     events = [
         EventListItem(
@@ -146,7 +183,7 @@ async def get_events(
             )
 
     return EventListResponse(
-        count=total_count or 0,
+        count=total_count,
         next=next_url,
         previous=previous_url,
         results=events,
@@ -161,13 +198,9 @@ async def get_event(
     event_id: UUID,
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.execute(
-        select(Event, Place)
-        .join(Place, Event.place_id == Place.id)
-        .where(Event.id == event_id)
-    )
+    repository = EventRepository(session)
 
-    row = result.first()
+    row = await repository.get_event(event_id)
 
     if row is None:
         raise HTTPException(
@@ -201,9 +234,9 @@ async def get_available_seats(
     event_id: UUID,
     session: AsyncSession = Depends(get_session),
 ):
-    event = await session.scalar(
-        select(Event).where(Event.id == event_id),
-    )
+    repository = EventRepository(session)
+
+    event = await repository.get_event_by_id(event_id)
 
     if event is None:
         raise HTTPException(
