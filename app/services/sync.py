@@ -89,7 +89,14 @@ async def sync_events(
                     event_data["changed_at"],
                 )
 
-                event_status = EventStatus(event_data["status"])
+                try:
+                    event_status = EventStatus(event_data["status"])
+                except ValueError:
+                    logger.warning(
+                        "Unknown event status: %s",
+                        event_data["status"],
+                    )
+                    continue
 
                 if event is None:
                     event = Event(
