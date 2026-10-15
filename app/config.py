@@ -14,6 +14,15 @@ class Settings(BaseSettings):
     events_provider_url: str
     events_provider_api_key: str
 
+    capashino_url: str = (
+        "http://student-system-capashino-web."
+        "student-system-capashino.svc:8000"
+    )
+    capashino_api_key: str
+
+    outbox_poll_interval_seconds: int = 5
+    outbox_batch_size: int = 100
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

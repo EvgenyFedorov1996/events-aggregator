@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import date
 from uuid import UUID
@@ -28,12 +29,14 @@ from app.schemas.tickets import (
 from app.services.events import get_event, get_events
 from app.services.exceptions import (
     EventNotFound,
+    IdempotencyConflict,
     RegistrationClosed,
     SeatNotAvailable,
     TicketNotFound,
 )
 from app.services.seats import get_available_seats
 from app.services.tickets import create_ticket, delete_ticket
+from app.workers.outbox import outbox_worker_loop
 from app.workers.scheduler import (
     run_sync_job,
     start_scheduler,
@@ -44,10 +47,19 @@ from app.workers.scheduler import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     start_scheduler()
+    outbox_task = asyncio.create_task(outbox_worker_loop())
 
-    yield
+    try:
+        yield
+    finally:
+        outbox_task.cancel()
 
-    stop_scheduler()
+        try:
+            await outbox_task
+        except asyncio.CancelledError:
+            pass
+        finally:
+            stop_scheduler()
 
 
 app = FastAPI(
@@ -109,6 +121,21 @@ async def ticket_not_found_handler(
     return JSONResponse(
         status_code=404,
         content={"detail": "Ticket not found"},
+    )
+
+
+@app.exception_handler(IdempotencyConflict)
+async def idempotency_conflict_handler(
+    request: Request,
+    exc: IdempotencyConflict,
+):
+    return JSONResponse(
+        status_code=409,
+        content={
+            "detail": (
+                "Idempotency key was already used with different request data"
+            ),
+        },
     )
 
 
@@ -193,6 +220,7 @@ async def create_ticket_endpoint(
             last_name=request.last_name,
             email=request.email,
             seat=request.seat,
+            idempotency_key=request.idempotency_key,
         )
 
         return TicketCreateResponse(

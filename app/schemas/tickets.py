@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class TicketCreateRequest(BaseModel):
@@ -9,6 +9,11 @@ class TicketCreateRequest(BaseModel):
     email: EmailStr
     seat: str
     event_id: UUID
+    idempotency_key: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+    )
 
 
 class TicketCreateResponse(BaseModel):

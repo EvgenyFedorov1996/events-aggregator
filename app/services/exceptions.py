@@ -12,3 +12,7 @@ class SeatNotAvailable(Exception):
 
 class TicketNotFound(Exception):
     """Raised when a ticket does not exist."""
+
+
+class IdempotencyConflict(Exception):
+    """Raised when an idempotency key is reused with different data."""
