@@ -25,6 +25,11 @@ class OutboxEvent(Base):
         nullable=False,
         default="pending",
     )
+    attempts: Mapped[int] = mapped_column(
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

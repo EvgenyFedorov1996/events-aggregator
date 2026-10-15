@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     outbox_poll_interval_seconds: int = 5
     outbox_batch_size: int = 100
+    outbox_max_attempts: int = 5
 
     model_config = SettingsConfigDict(
         env_file=".env",
