@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from datetime import date
 from uuid import UUID
 
+import sentry_sdk
 from fastapi import (
     BackgroundTasks,
     Depends,
@@ -15,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cache.seats import SeatsCache
 from app.clients.events_provider import EventsProviderClient
+from app.config import settings
 from app.database import get_session
 from app.schemas.events import (
     AvailableSeatsResponse,
@@ -43,6 +45,11 @@ from app.workers.scheduler import (
     stop_scheduler,
 )
 
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        auto_session_tracking=False,
+    )
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

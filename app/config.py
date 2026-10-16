@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     )
     capashino_api_key: str
 
+    sentry_dsn: str | None = None
+
     outbox_poll_interval_seconds: int = 5
     outbox_batch_size: int = 100
     outbox_max_attempts: int = 5
