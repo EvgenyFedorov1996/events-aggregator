@@ -45,39 +45,24 @@ async def process_outbox_batch(
             event.sent_at = datetime.now(timezone.utc)
             sent_count += 1
 
-
         except Exception:
-
             event.attempts += 1
 
             if event.attempts >= settings.outbox_max_attempts:
-
                 event.status = "failed"
 
                 logger.exception(
-
                     "Outbox event %s failed after %s attempts",
-
                     event.id,
-
                     event.attempts,
-
                 )
 
             else:
-
                 logger.exception(
-
-                    "Failed to send outbox event %s "
-
-                    "(attempt %s of %s)",
-
+                    "Failed to send outbox event %s (attempt %s of %s)",
                     event.id,
-
                     event.attempts,
-
                     settings.outbox_max_attempts,
-
                 )
 
     await session.commit()

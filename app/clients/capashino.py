@@ -1,3 +1,5 @@
+from urllib.parse import urljoin
+
 import httpx
 
 from app.config import settings
@@ -14,7 +16,10 @@ class CapashinoClient:
         reference_id: str,
         idempotency_key: str,
     ) -> None:
-        url = f"{self.base_url}/api/notifications"
+        url = urljoin(
+            f"{self.base_url.rstrip('/')}/",
+            "api/notifications",
+        )
 
         headers = {
             "X-API-Key": self.api_key,
